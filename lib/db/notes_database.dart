@@ -27,9 +27,37 @@ class NotesDatabse {
   final path = join(dbPath, filePath);
 
   return await openDatabase(path, version:1, onCreate: _createDB);
+  // if version incremented => onUpgrade: method will be run
 
   Future _createDB(Database db, int version) async {
+    // defining variable types for SQL
+    final idType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
+    final textType = "TEXT NOT NULL";
+    final boolType = 'BOOLEAN NOT NULL';
+    final integerType = 'INTEGER NOT NULL';
 
+    // creating the database table (schema)
+    await db.execute('''
+CREATE TABLE $tableNotes (
+  ${NoteFields.id} $idType,
+  ${NoteFields.isImportant} $boolType,
+  ${NoteFields.number} $integerType,
+  ${NoteFields.title} $textType,
+  ${NoteFields.description} $textType,
+  ${NoteFields.time} $textType,
+  )
+''');
+// it's possible to create multiple data tables, just duplicate from "await.db.execute..."
+  }
+
+  // C for CRUD
+  Future<Note> create(Note note) async {
+    // a reference to the database
+    final db = await instance.database;
+
+    // call on the database's insert method
+    final id = await db.insert(tableNotes, note.toJson());
+    return note.copy(id: id);
   }
 
   Future close() async {

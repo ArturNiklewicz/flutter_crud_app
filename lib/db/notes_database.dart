@@ -1,63 +1,110 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-class NotesDatabse {
-  // global field instance calling the private constructor
+import '../models/note.dart';
+
+class NotesDatabase {
   static final NotesDatabase instance = NotesDatabase._init();
 
-  // field for the database
   static Database? _database;
 
-  // pritavte constructor
   NotesDatabase._init();
 
-  // opening the asynchrounous connection for the database
-  Future<Databse> get databse async {
+  Future<Database> get database async {
     if (_database != null) return _database!;
 
     _database = await _initDB('notes.db');
-    return _database!
+    return _database!;
   }
 
-  // initialize the database
-  Future <Database> _initDB(String filePath) async {
-  // store the database in our file storage system
-  final dbPath = await getDatabasePath();
-  //connect the dbPath with filePath
-  final path = join(dbPath, filePath);
+  Future<Database> _initDB(String filePath) async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, filePath);
 
-  return await openDatabase(path, version:1, onCreate: _createDB);
-  // if version incremented => onUpgrade: method will be run
+    return await openDatabase(path, version: 1, onCreate: _createDB);
+  }
 
   Future _createDB(Database db, int version) async {
-    // defining variable types for SQL
     final idType = 'INTEGER PRIMARY KEY AUTOINCREMENT';
-    final textType = "TEXT NOT NULL";
+    final textType = 'TEXT NOT NULL';
     final boolType = 'BOOLEAN NOT NULL';
     final integerType = 'INTEGER NOT NULL';
 
-    // creating the database table (schema)
     await db.execute('''
-CREATE TABLE $tableNotes (
-  ${NoteFields.id} $idType,
+CREATE TABLE $tableNotes ( 
+  ${NoteFields.id} $idType, 
   ${NoteFields.isImportant} $boolType,
   ${NoteFields.number} $integerType,
   ${NoteFields.title} $textType,
   ${NoteFields.description} $textType,
-  ${NoteFields.time} $textType,
+  ${NoteFields.createdTime} $textType
   )
 ''');
-// it's possible to create multiple data tables, just duplicate from "await.db.execute..."
   }
 
-  // C for CRUD
   Future<Note> create(Note note) async {
-    // a reference to the database
     final db = await instance.database;
 
-    // call on the database's insert method
+    // final json = note.toJson();
+    // final columns =
+    //     '${NoteFields.title}, ${NoteFields.description}, ${NoteFields.time}';
+    // final values =
+    //     '${json[NoteFields.title]}, ${json[NoteFields.description]}, ${json[NoteFields.time]}';
+    // final id = await db
+    //     .rawInsert('INSERT INTO table_name ($columns) VALUES ($values)');
+
     final id = await db.insert(tableNotes, note.toJson());
     return note.copy(id: id);
+  }
+
+  Future<Note> readNote(int id) async {
+    final db = await instance.database;
+
+    final maps = await db.query(
+      tableNotes,
+      columns: NoteFields.values,
+      where: '${NoteFields.id} = ?',
+      whereArgs: [id],
+    );
+
+    if (maps.isNotEmpty) {
+      return Note.fromJson(maps.first);
+    } else {
+      throw Exception('ID $id not found');
+    }
+  }
+
+  Future<List<Note>> readAllNotes() async {
+    final db = await instance.database;
+
+    final orderBy = '${NoteFields.createdTime} ASC';
+    // final result =
+    //     await db.rawQuery('SELECT * FROM $tableNotes ORDER BY $orderBy');
+
+    final result = await db.query(tableNotes, orderBy: orderBy);
+
+    return result.map((json) => Note.fromJson(json)).toList();
+  }
+
+  Future<int> update(Note note) async {
+    final db = await instance.database;
+
+    return db.update(
+      tableNotes,
+      note.toJson(),
+      where: '${NoteFields.id} = ?',
+      whereArgs: [note.id],
+    );
+  }
+
+  Future<int> delete(int id) async {
+    final db = await instance.database;
+
+    return await db.delete(
+      tableNotes,
+      where: '${NoteFields.id} = ?',
+      whereArgs: [id],
+    );
   }
 
   Future close() async {
@@ -65,5 +112,4 @@ CREATE TABLE $tableNotes (
 
     db.close();
   }
-  },
 }

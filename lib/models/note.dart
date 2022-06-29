@@ -7,6 +7,8 @@ class NoteFields {
     id, isImportant, number, title, description, createdTime
   ];
 
+  // defining the field names, which will be columns in the SQLDB
+  // always put underscore '_' before id field in SQL
   static final String id = '_id';
   static final String isImportant = 'isImportant';
   static final String number = 'number';
@@ -32,7 +34,7 @@ class Note {
     required this.createdTime,
   });
 
-  // a copy of current note object
+  // a copy of current note object => for inserting the auto-generated id
   Note copy({
     int? id,
     bool? isImportant,
@@ -50,6 +52,7 @@ class Note {
         createdTime: createdTime ?? this.createdTime,
       );
 
+  // method ran on READ
   static Note fromJson(Map<String, Object?> json) => Note(
         id: json[NoteFields.id] as int?,
         isImportant: json[NoteFields.isImportant] == 1,
@@ -59,6 +62,7 @@ class Note {
         createdTime: DateTime.parse(json[NoteFields.createdTime] as String),
       );
 
+  // method ran on CREATE
   Map<String, Object?> toJson() => {
         NoteFields.id: id,
         NoteFields.title: title,

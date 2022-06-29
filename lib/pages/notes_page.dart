@@ -18,15 +18,15 @@ class _NotesPageState extends State<NotesPage> {
   @override
   void initState() {
     super.initState();
-
     refreshNotes();
+    print("initState ran");
   }
 
   @override
   void dispose() {
     NotesDatabase.instance.close();
-
     super.dispose();
+    print("dispose ran");
   }
 
   Future refreshNotes() async {
@@ -34,7 +34,7 @@ class _NotesPageState extends State<NotesPage> {
 
     this.notes = await NotesDatabase.instance.readAllNotes();
 
-    setState(() => isLoading = false);
+    setState(() => isLoading = false); 
   }
 
   @override
